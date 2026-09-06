@@ -1,0 +1,8 @@
+{
+  "material": "engine/pbr",
+  "albedo": "assets/white.png",
+  "params": {
+    "roughness": 0.4,
+    "metallic": 1.0
+  }
+}

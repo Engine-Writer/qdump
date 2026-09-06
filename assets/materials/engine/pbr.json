@@ -1,0 +1,11 @@
+{
+  "shader": "shaders/triangle",
+  "albedo": "assets/grey.png",
+  "pipeline": {
+    "cull": "back",
+    "depthOp": "less",
+    "depthTest": true,
+    "depthWrite": true,
+    "blend": false
+  }
+}

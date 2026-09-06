@@ -1,0 +1,21 @@
+{
+  "_comment": "Name resolution / dispatch table, merged over the engine's builtin defaults at startup. Namespaced names (engine/*, custom/*) resolve to file paths here; missing entries fall back to the assets/<kind>/<name> convention. Components map to 'builtin' or a DLL path.",
+
+  "shaders": {
+    "engine/triangle": { "path": "shaders/triangle" }
+  },
+
+  "materials": {
+  },
+
+  "components": {
+    "base/transform":          "builtin",
+    "engine/meshRenderer":     "builtin",
+    "engine/camera":           "builtin",
+    "engine/emissive":         "builtin",
+    "engine/light":            "builtin",
+    "engine/reflectionProbe":  "builtin",
+    "custom/emissivenessDemo": "emissiveness_demo.dll",
+    "custom/pulseMover":        "pulse_mover.dll"
+  }
+}

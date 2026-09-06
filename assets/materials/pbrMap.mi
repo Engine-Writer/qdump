@@ -1,0 +1,6 @@
+{
+  "material": "engine/pbr",
+  "albedo": "assets/grey.png",
+  "params": {
+  }
+}

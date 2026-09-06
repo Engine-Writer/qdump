@@ -1,0 +1,190 @@
+{
+  "_comment": "STRIPPED to the bare map. Everything else (walls, ball, pedestal, all lights, reflection probes, emissive cubes) was removed. The previous full scene is backed up in the session scratchpad as main.json.bak.",
+  "defaultEnvironment": {
+    "_comment_skybox": "A real skybox block, pointed at a literal 1x1 black HDR (assets/hdri/null.hdr) instead of being omitted/disabled. scene.cpp only binds the irradiance/prefilter cubemaps -- and sets hasIBL true -- when this key is PRESENT; omitting it left MaterialInstance falling back to binding each object's own 2D albedo texture into the samplerCube slots (a real Vulkan validation error: VkImageViewType 2D vs the shader's Dim=Cube), which the shader was sampling as undefined-behaviour garbage ambient light. Pointing at a real (if black) HDR runs the genuine IBL pipeline, producing correct cube views that are safely all-zero -- background stays black, IBL ambient correctly contributes nothing, and the descriptor is actually valid.",
+    "skybox": {
+      "hdr": "assets/hdri/null.hdr",
+      "size": 4
+    },
+    "_comment_sun": "Sun disabled: a zero dir means no directional light. Both the shader and scene loader treat zero-length as 'skip the sun' rather than normalizing it.",
+    "skyLight": {
+      "dir": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "shadow": {
+      "size": 1024,
+      "slots": 2,
+      "radius": 100.0,
+      "warp": 0.5
+    },
+    "defaultCamera": "/camera#m0"
+  },
+  "lightBake": {
+    "_comment": "The engine's own GPU baker (LightBaker) is DISABLED -- see the commented-out rebake block in Scene::bakeLighting() (scene.cpp) -- so minSpacing/surfaceOffset/indirectRays/probesPerVertex/ambientFloor/maxProbes/vertexNormalPush/smoothPasses/neeFraction/sceneBoxPadding/sceneBoxAlbedo/aoStrength/aoRadius were all dead weight here: every one of those fields' C++ struct default (light_baker.hpp) already matches its Python dict default (gpu_light_bake.py), so omitting them from this JSON changes nothing about LightBakeCache::computeSignature's result on either side -- they were just noise. All real lighting is baked offline via tools/blender_bake.py (Cycles, emissive-mesh-only, see EMISSIVE_MESH_LIGHTS_ONLY) and loaded from the .lightbake cache. 'bounces' is the one field still actually read, by tools/blender_scene_preview.py's own Cycles setup (blender_bake.py itself now hardcodes bounces=3).",
+    "bounces": 3
+  },
+  "assets": [
+    {
+      "path": "assets/map0_2_tess.obj",
+      "type": "obj"
+    },
+    {
+      "path": "assets/cube.obj",
+      "type": "obj"
+    },
+    {
+      "path": "assets/sphere.obj",
+      "type": "obj"
+    },
+    {
+      "path": "assets/grey.png",
+      "type": "texture"
+    }
+  ],
+  "objects": [
+    {
+      "enabled": true,
+      "name": "/camera",
+      "subcomponents": [
+        {
+          "type": "base/transform",
+          "position": [
+            0.0,
+            -6.0,
+            -6.0
+          ]
+        },
+        {
+          "id": "m0",
+          "type": "engine/camera",
+          "fovDegrees": 60.0,
+          "nearPlane": 0.5,
+          "farPlane": 500.0,
+          "isMain": true,
+          "lookDir": [
+            0.0,
+            0.0,
+            1.0
+          ]
+        },
+        {
+          "type": "engine/cameraController",
+          "moveSpeed": 15.0,
+          "turnSpeed": 90.0
+        }
+      ]
+    },
+    {
+      "_comment": "The map, TESSELLATED to ~1-unit edges (map0_tess.obj). Baked GI is resolved per-vertex and interpolated by the rasterizer, so lighting detail is capped by vertex density -- the original had 20x20 single-quad walls, i.e. only 4 lighting samples across an entire wall, which threw away nearly every probe. Floor at Y=-10; main room Z -10..20, doorway Z 20..30 (X +/-2.8), far room Z 30..50.",
+      "enabled": true,
+      "name": "/map",
+      "subcomponents": [
+        {
+          "type": "base/transform",
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "engine/meshRenderer",
+          "meshPath": "assets/map0_2_tess.obj",
+          "miPath": "assets/materials/pbrMap.mi",
+          "isStatic": true
+        }
+      ]
+    },
+    {
+      "_comment": "The single room light: a 5x5x5 emissive BOX centred on the MAIN ROOM (0, 0.82, 4.93) -- the room's own centre, not the whole map's bounding-box centre, which lands in the narrow doorway. Lighting comes ONLY from this box's engine/emissive material (and the gold/blue emissive cubes below) -- no engine/light component. Restored to the original color*intensity value (0.55,0.75,1.0 * 14.5) after a 2x and then a 4*pi experiment both got reverted.",
+      "enabled": true,
+      "name": "/roomLight",
+      "subcomponents": [
+        {
+          "type": "base/transform",
+          "position": [
+            0.0,
+            0.82,
+            4.93
+          ],
+          "scale": [5.0, 5.0, 5.0]
+        },
+        {
+          "type": "engine/meshRenderer",
+          "meshPath": "assets/cube.obj",
+          "miPath": "assets/materials/pbrMap.mi",
+          "isStatic": false
+        },
+        {
+          "type": "engine/emissive",
+          "color": [7.975, 10.875, 14.5]
+        }
+      ]
+    },
+    {
+      "_comment": "Emissive gold cube -- metallic=1.0/roughness=0.4 (via gold.mi's newly-wired roughness/metallic params), color set through engine/emissive so it glows independent of albedo/lighting. Dynamic (not static), so it's lit live rather than baked.",
+      "enabled": true,
+      "name": "/goldCube",
+      "subcomponents": [
+        {
+          "type": "base/transform",
+          "position": [-6.5, -8.2, 1.5],
+          "scale": [3.0, 3.0, 3.0]
+        },
+        {
+          "type": "engine/meshRenderer",
+          "meshPath": "assets/cube.obj",
+          "miPath": "assets/materials/gold.mi",
+          "isStatic": false
+        },
+        {
+          "type": "engine/emissive",
+          "color": [10.5, 8.4, 2.1]
+        }
+      ]
+    },
+    {
+      "_comment": "Emissive light-blue cube.",
+      "enabled": true,
+      "name": "/blueCube",
+      "subcomponents": [
+        {
+          "type": "base/transform",
+          "position": [6.5, -8.2, 1.5],
+          "scale": [2.6, 2.6, 2.6]
+        },
+        {
+          "type": "engine/meshRenderer",
+          "meshPath": "assets/cube.obj",
+          "miPath": "assets/materials/lightblue.mi",
+          "isStatic": false
+        },
+        {
+          "type": "engine/emissive",
+          "color": [2.1, 5.6, 10.5]
+        }
+      ]
+    },
+    {
+      "_comment": "Green smooth-plastic ball -- low roughness (0.15), metallic=0.0, non-emissive so it reads AO/GI shading from the room light.",
+      "enabled": true,
+      "name": "/greenBall",
+      "subcomponents": [
+        {
+          "type": "base/transform",
+          "position": [0.3, -8.2, 1.5],
+          "scale": [1.8, 1.8, 1.8]
+        },
+        {
+          "type": "engine/meshRenderer",
+          "meshPath": "assets/sphere.obj",
+          "miPath": "assets/materials/greenplastic.mi",
+          "isStatic": true
+        }
+      ]
+    }
+  ]
+}
